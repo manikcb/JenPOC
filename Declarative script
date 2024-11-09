@@ -1,0 +1,32 @@
+pipeline { 
+    agent any 
+    environment { KEY = 'value' } 
+    options { timeout(time: 1, unit: 'HOURS') } 
+    parameters { string(name: 'PARAM', defaultValue: 'value', description: 'Description') } 
+    triggers { cron('H 4/* 0 0 1-5') } 
+    tools { maven 'Maven 3.6.3' } 
+    stages { 
+        stage('Build') { 
+            when { branch 'main' } 
+            steps { echo 'Building...' } 
+            post { success { echo 'Build completed successfully' } } 
+        } 
+        stage('Test') { 
+            parallel { 
+                stage('Unit Test') { steps { echo 'Running unit tests...' } } 
+                stage('Integration Test') { steps { echo 'Running integration tests...' } } 
+            } 
+            post { failure { echo 'Tests failed' } } 
+        } 
+        stage('Deploy') { 
+            input { message 'Approve deployment?' } 
+            agent { docker { image 'nginx:latest' } } 
+            steps { echo 'Deploying...' } 
+        } 
+    } 
+    post { 
+        always { echo 'Cleaning up...' } 
+        success { echo 'Pipeline succeeded!' } 
+        failure { echo 'Pipeline failed!' } 
+    } 
+}
