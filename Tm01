@@ -1,0 +1,65 @@
+When upgrading from Tomcat 9.x to 10.x, there are a few things you should consider. Tomcat 10 introduces changes related to Jakarta EE (previously Java EE) that may affect your setup, but no additional parameters are strictly required to make the upgrade work. However, some configuration adjustments might be necessary.
+
+Key Changes in Tomcat 10.x:
+	1.	Jakarta EE Namespace Change
+	•	In Tomcat 10, Java EE packages have been renamed to Jakarta EE. For example:
+	•	javax.servlet.* → jakarta.servlet.*
+	•	javax.persistence.* → jakarta.persistence.*
+	•	Impact: If you are running applications that use javax packages, you’ll need to update the code and dependencies to use the new jakarta namespace.
+	2.	JSP API Version
+	•	Tomcat 10.x uses the Jakarta Server Pages (JSP) API, which means you may need to upgrade the JSP and Servlet libraries to the Jakarta versions.
+	3.	Web Application Compatibility
+	•	If you deploy applications built for Java EE (javax), they will need to be modified to use Jakarta EE (jakarta) namespaces.
+You may encounter errors like:
+
+javax.servlet.Servlet cannot be resolved
+
+Solution: Replace dependencies that use javax.servlet with their jakarta.servlet counterparts in your build tool (Maven, Gradle, etc.).
+
+What Parameters You Might Need to Pass in Tomcat 10.x
+
+Tomcat 10.x may require some additional or modified configuration. Here are a few things to consider:
+
+1. Set Java Version
+
+Make sure you’re using an appropriate Java version, as Tomcat 10.x requires Java 8+. If needed, specify the version with the -D arguments in catalina.sh or setenv.sh:
+
+export JAVA_OPTS="-Djava.version=11"
+
+2. Pass JVM Parameters for Compatibility
+
+If your application still depends on javax.* namespaces (from Java EE), you might need to include the following parameter:
+
+export JAVA_OPTS="-Djavax.servlet.jsp.jstl.util.ExpressionEvaluatorFactory=org.apache.taglibs.standard.lang.jstl.ExpressionEvaluatorFactoryImpl"
+
+This is to handle compatibility if you’re using legacy libraries.
+
+3. Specify the New Jakarta Servlet API
+
+For libraries or applications built for Jakarta EE:
+	•	Update web.xml or your application’s code to use the jakarta namespace.
+	•	Ensure the correct Jakarta Servlet API version is on the classpath.
+
+You can explicitly set classpath options for Jakarta libraries if needed:
+
+export CATALINA_OPTS="$CATALINA_OPTS:/opt/tomcat/lib/jakarta-servlet-api.jar"
+
+4. Update setenv.sh (Optional)
+
+If you’re passing custom options, set them in setenv.sh:
+
+export CATALINA_OPTS="-Xms512m -Xmx1024m -Dlog.level=DEBUG -Djava.endorsed.dirs=/opt/tomcat/lib"
+
+Things to Test After Upgrade
+	1.	JAR Compatibility: Ensure that all your application’s JAR dependencies are compatible with Jakarta EE.
+	2.	Namespace Changes: Ensure no javax.* namespaces are used if your application is built for Jakarta EE.
+	3.	Application Logs: Check the logs in /opt/tomcat/logs (e.g., catalina.out) for any errors related to missing classes or namespace mismatches.
+	4.	Session Configuration: Ensure your session settings are compatible with the new Tomcat version.
+
+Summary of Changes When Upgrading to Tomcat 10.x
+	•	Jakarta EE Transition: Update dependencies and code to use jakarta.* instead of javax.*.
+	•	Servlet and JSP API: Use the Jakarta versions of the APIs.
+	•	Ensure Java Compatibility: Tomcat 10 requires Java 8 or higher.
+	•	Adjust Classpath or System Properties: Use the appropriate JARs for Jakarta, and pass necessary JVM parameters via JAVA_OPTS.
+
+Would you like to see more details on how to transition a specific application or address any particular errors after upgrading?
