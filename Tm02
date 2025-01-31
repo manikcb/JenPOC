@@ -1,0 +1,129 @@
+How to Check if Your WAR File Uses javax.* or Jakarta Namespaces
+
+As an admin, you can identify whether a WAR file uses javax.* (Java EE) or jakarta.* (Jakarta EE) namespaces by inspecting the WAR file and its dependencies.
+
+Here’s how to check:
+
+1. Inspect the WAR File Contents
+
+You can open the WAR file and look at the WEB-INF/lib/ and WEB-INF/classes/ directories to check the namespaces.
+
+Steps to Inspect WAR File:
+	1.	Extract the WAR File:
+You can extract the contents of the WAR file to see the classes and JAR files inside.
+
+mkdir extracted_war
+unzip yourfile.war -d extracted_war
+
+
+	2.	Check the WEB-INF/lib/ Directory:
+Look for JAR files in the WEB-INF/lib/ directory. If you see JARs such as:
+	•	javax.servlet-api.jar
+	•	javax.persistence-api.jar
+These indicate the use of Java EE (javax). If you see:
+	•	jakarta.servlet-api.jar
+	•	jakarta.persistence-api.jar
+These indicate the use of Jakarta EE (jakarta).
+
+2. Search for Namespaces in the Code (XML and Java files)
+
+You can also inspect the web.xml and any other configuration files in the WAR.
+
+Steps to Check web.xml:
+	1.	Extract web.xml from WEB-INF/:
+
+cat extracted_war/WEB-INF/web.xml
+
+
+	2.	Look for Namespaces:
+	•	If you see xmlns="http://xmlns.jcp.org/xml/ns/javaee", it is using Java EE (javax).
+	•	If you see xmlns="https://jakarta.ee/xml/ns/jakartaee", it is using Jakarta EE (jakarta).
+
+Example (web.xml for Java EE):
+
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+             http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+         version="4.0">
+
+Example (web.xml for Jakarta EE):
+
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
+             https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
+         version="5.0">
+
+3. Check the pom.xml (Maven-based Projects)
+
+If the project is Maven-based, you can inspect the pom.xml to check which versions of the dependencies are used.
+	1.	Open pom.xml and look for dependencies:
+
+<dependency>
+    <groupId>javax.servlet</groupId>
+    <artifactId>javax.servlet-api</artifactId>
+    <version>4.0.1</version>
+</dependency>
+
+This shows that Java EE is used.
+
+	2.	If you see Jakarta dependencies:
+
+<dependency>
+    <groupId>jakarta.servlet</groupId>
+    <artifactId>jakarta.servlet-api</artifactId>
+    <version>5.0.0</version>
+</dependency>
+
+This shows that Jakarta EE is used.
+
+4. Check for javax.* or jakarta.* Imports in Java Files
+
+Another way to check is by searching for import statements in the Java files.
+	•	For Java EE (javax): You’ll see imports like:
+
+import javax.servlet.*;
+import javax.persistence.*;
+
+
+	•	For Jakarta EE (jakarta): You’ll see imports like:
+
+import jakarta.servlet.*;
+import jakarta.persistence.*;
+
+
+
+You can use a simple search in the src directory of your project to identify which namespaces are used:
+
+grep -r "javax.servlet" /path/to/your/source/
+grep -r "jakarta.servlet" /path/to/your/source/
+
+Handling Compatibility for Legacy javax.* Dependencies
+
+If your application uses javax.* namespaces (from Java EE), and you need to run it on Tomcat 10.x, you may have to pass JVM parameters to ensure compatibility.
+
+Passing JVM Parameters for Compatibility:
+
+If you’re using legacy javax.* namespaces (Java EE), you can pass the following JVM parameters to handle compatibility:
+
+export JAVA_OPTS="-Djavax.servlet.jsp.jstl.util.ExpressionEvaluatorFactory=org.apache.taglibs.standard.lang.jstl.ExpressionEvaluatorFactoryImpl"
+
+This setting ensures that your legacy JSTL (JavaServer Pages Standard Tag Library) works with Jakarta EE on Tomcat 10.x.
+
+You can add this line to your setenv.sh or catalina.sh file:
+
+export JAVA_OPTS="-Djavax.servlet.jsp.jstl.util.ExpressionEvaluatorFactory=org.apache.taglibs.standard.lang.jstl.ExpressionEvaluatorFactoryImpl"
+
+After updating setenv.sh, restart Tomcat:
+
+./catalina.sh stop
+./catalina.sh start
+
+Summary of Steps to Identify javax.* or jakarta.* in WAR
+	1.	Check the JAR files in WEB-INF/lib/ for javax.* or jakarta.*.
+	2.	Inspect web.xml for namespace declarations.
+	3.	Check the pom.xml for Maven dependencies (javax.* or jakarta.*).
+	4.	Search for Java imports for javax.servlet or jakarta.servlet.
+
+By following these steps, you can confirm whether your WAR uses legacy javax.* namespaces or the newer jakarta.* namespaces. Would you like help with any specific step or further clarification?
