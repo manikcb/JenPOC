@@ -1,0 +1,83 @@
+🔍 Enabling Detailed Logging for Your Issue in Tomcat 10
+
+Since your issue is related to Spring Boot 3, Tomcat 10, and classloading issues (javax → jakarta migration, NoClassDefFoundError, BeanCreationException, etc.), you need to enable logs for:
+✔ Tomcat ClassLoader
+✔ Spring Boot Beans & Autowiring
+✔ Java Class Resolution
+✔ Application Startup
+
+1️⃣ Increase Tomcat Logging (ClassLoading, Deployment Issues)
+
+Edit Tomcat’s logging configuration:
+
+vi /opt/tomcat/conf/logging.properties
+
+🔹 Enable detailed classloading logs
+
+org.apache.catalina.level = FINE
+org.apache.catalina.startup.HostConfig.level = DEBUG
+org.apache.catalina.core.level = DEBUG
+org.apache.catalina.loader.WebappClassLoaderBase.level = DEBUG
+org.apache.catalina.util.LifecycleBase.level = DEBUG
+org.apache.jasper.level = FINE
+
+Save & Exit (Esc + :wq).
+
+2️⃣ Enable Spring Boot Debugging (Application Issues)
+
+If your Spring Boot app is not logging enough details, modify application.properties or application.yml:
+
+For application.properties:
+
+logging.level.org.springframework=DEBUG
+logging.level.org.apache=DEBUG
+logging.level.org.hibernate=DEBUG
+
+For application.yml:
+
+logging:
+  level:
+    org.springframework: DEBUG
+    org.apache: DEBUG
+    org.hibernate: DEBUG
+
+3️⃣ Enable JVM Debug Logs (Java Class Loading, Errors)
+
+Edit Tomcat’s setenv.sh file (or catalina.sh if setenv.sh doesn’t exist):
+
+vi /opt/tomcat/bin/setenv.sh
+
+Add these lines:
+
+export JAVA_OPTS="$JAVA_OPTS -Djava.util.logging.config.file=/opt/tomcat/conf/logging.properties"
+export JAVA_OPTS="$JAVA_OPTS -Dorg.apache.catalina.loader.WebappClassLoaderBase.level=FINE"
+export JAVA_OPTS="$JAVA_OPTS -verbose:class -verbose:gc -Dspring.main.lazy-initialization=true"
+
+Save & Exit.
+
+4️⃣ Restart Tomcat for Changes to Apply
+
+systemctl restart tomcat  # If using systemd
+# OR
+/opt/tomcat/bin/shutdown.sh && /opt/tomcat/bin/startup.sh
+
+5️⃣ Monitor Logs in Real-Time
+
+Start monitoring logs for errors:
+
+tail -f /opt/tomcat/logs/catalina.out
+tail -f /opt/tomcat/logs/localhost.log
+tail -f /opt/tomcat/logs/host-manager.log
+
+🔹 If the issue is related to classloading (NoClassDefFoundError, ClassNotFoundException):
+Check for missing dependencies in the logs.
+
+🔹 If the issue is related to Spring Beans (BeanCreationException, Lookup method resolution failed):
+Spring debug logs will give details on why a bean could not be created.
+
+✅ Next Steps
+	•	If a class is missing (ClassNotFoundException), you may need to include additional JARs in WEB-INF/lib or check classpath issues.
+	•	If it’s a migration issue (javax → jakarta), try running the Jakarta Migration Tool.
+	•	If the war runs on one VM but not another, compare env variables (printenv or env | grep JAVA).
+
+Let me know what errors appear after enabling these logs! 🚀
