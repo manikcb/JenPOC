@@ -1,0 +1,98 @@
+#!/bin/bash
+
+# Jenkins Environment Variables
+export JENKINS_HOME="/var/lib/jenkins"
+export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
+export CLASSPATH="$JAVA_HOME/lib"
+export HTTPS_PORT="8443"
+export JENKINS_LOG="/var/log/jenkins.log"
+export JENKINS_WAR="/usr/share/jenkins/jenkins.war"
+export JENKINS_PID="/var/run/jenkins.pid"
+
+# SSL Certificate Configuration
+export KEYSTORE_PATH="/path/to/keystore.jks"  # Update this path
+export KEYSTORE_PASSWORD="changeit"  # Change this to your keystore password
+
+# Function to check if Jenkins is running
+is_running() {
+    if [ -f "$JENKINS_PID" ]; then
+        PID=$(cat "$JENKINS_PID")
+        if ps -p $PID > /dev/null 2>&1; then
+            return 0  # Jenkins is running
+        fi
+    fi
+    return 1  # Jenkins is not running
+}
+
+# Function to start Jenkins
+start_jenkins() {
+    if is_running; then
+        echo "Jenkins is already running with PID $(cat $JENKINS_PID)."
+        exit 1
+    fi
+
+    echo "Starting Jenkins with HTTPS..."
+    nohup java -jar "$JENKINS_WAR" \
+        --httpsPort=$HTTPS_PORT \
+        --httpsKeyStore="$KEYSTORE_PATH" \
+        --httpsKeyStorePassword="$KEYSTORE_PASSWORD" \
+        > "$JENKINS_LOG" 2>&1 & echo $! > "$JENKINS_PID"
+
+    sleep 5  # Wait for Jenkins to start
+    if is_running; then
+        echo "Jenkins started successfully with PID $(cat $JENKINS_PID)."
+    else
+        echo "Jenkins failed to start. Check logs at $JENKINS_LOG."
+    fi
+}
+
+# Function to stop Jenkins
+stop_jenkins() {
+    if is_running; then
+        echo "Stopping Jenkins..."
+        kill $(cat "$JENKINS_PID")
+        rm -f "$JENKINS_PID"
+        echo "Jenkins stopped."
+    else
+        echo "Jenkins is not running."
+    fi
+}
+
+# Function to restart Jenkins
+restart_jenkins() {
+    echo "Restarting Jenkins..."
+    stop_jenkins
+    sleep 3
+    start_jenkins
+}
+
+# Function to check Jenkins status
+status_jenkins() {
+    if is_running; then
+        echo "Jenkins is running with PID $(cat $JENKINS_PID)."
+    else
+        echo "Jenkins is NOT running."
+    fi
+}
+
+# Main script execution
+case "$1" in
+    start)
+        start_jenkins
+        ;;
+    stop)
+        stop_jenkins
+        ;;
+    restart)
+        restart_jenkins
+        ;;
+    status)
+        status_jenkins
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|status}"
+        exit 1
+        ;;
+esac
+
+exit 0
